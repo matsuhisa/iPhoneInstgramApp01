@@ -1,10 +1,5 @@
-//
 //  DetailViewController.h
 //  InstagramApp01
-//
-//  Created by 松久浩伸 on 2014/06/29.
-//  Copyright (c) 2014年 ___FULLUSERNAME___. All rights reserved.
-//
 
 #import <UIKit/UIKit.h>
 
@@ -12,5 +7,11 @@
 
 @property (strong, nonatomic) id detailItem;
 
-@property (weak, nonatomic) IBOutlet UILabel *detailDescriptionLabel;
+@property (weak, nonatomic) IBOutlet UIImageView *instagramImage;
+@property (strong, nonatomic) NSDictionary *photo;
+@property (weak, nonatomic) IBOutlet UILabel *username;
+@property (weak, nonatomic) IBOutlet UIImageView *userphoto;
+@property (weak, nonatomic) IBOutlet UILabel *likeCount;
+
+//@property (weak, nonatomic) IBOutlet UILabel *detailDescriptionLabel;
 @end

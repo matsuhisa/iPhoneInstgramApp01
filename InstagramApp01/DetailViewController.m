@@ -1,10 +1,5 @@
-//
 //  DetailViewController.m
 //  InstagramApp01
-//
-//  Created by 松久浩伸 on 2014/06/29.
-//  Copyright (c) 2014年 ___FULLUSERNAME___. All rights reserved.
-//
 
 #import "DetailViewController.h"
 
@@ -16,36 +11,75 @@
 
 #pragma mark - Managing the detail item
 
-- (void)setDetailItem:(id)newDetailItem
+- (void)setPhoto:(id)newPhoto
 {
-    if (_detailItem != newDetailItem) {
-        _detailItem = newDetailItem;
-        
-        // Update the view.
+    if (_photo != newPhoto) {
+        _photo = newPhoto;
         [self configureView];
-    }
-}
-
-- (void)configureView
-{
-    // Update the user interface for the detail item.
-
-    if (self.detailItem) {
-        self.detailDescriptionLabel.text = [self.detailItem description];
     }
 }
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-	// Do any additional setup after loading the view, typically from a nib.
     [self configureView];
 }
 
 - (void)didReceiveMemoryWarning
 {
     [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
+}
+
+- (void)configureView
+{
+    // ユーザー名
+    NSString *username = self.photo[@"user"][@"full_name"];
+    self.username.text = username;
+    
+    // Like
+    NSNumber *likecount = self.photo[@"likes"][@"count"];
+    self.likeCount.text = [likecount stringValue];;
+
+    // 画像取得
+    NSURL *image_url = [NSURL URLWithString:self.photo[@"images"][@"standard_resolution"][@"url"]];
+    NSURL *user_url  = [NSURL URLWithString:self.photo[@"user"][@"profile_picture"]];
+    
+    // セッションを用意する
+    // - タイムアウトの時間などを設定可能らしい
+    NSURLSessionConfiguration* config = [NSURLSessionConfiguration defaultSessionConfiguration];
+    NSURLSession* session = [NSURLSession sessionWithConfiguration:config];
+    
+    // タスクの設定をする
+    NSURLSessionDataTask* task =
+    [session dataTaskWithURL:image_url
+           completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+               UIImage* image = [UIImage imageWithData:data];
+
+               _instagramImage.contentMode = UIViewContentModeScaleAspectFit;
+
+               // UIImageVIewを更新する
+               dispatch_async(dispatch_get_main_queue(), ^{
+                   _instagramImage.image = image;
+               });
+           }];
+
+    // ユーザープロフィールの写真
+    NSURLSessionDataTask* usertask =
+    [session dataTaskWithURL:user_url
+           completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+               UIImage* image = [UIImage imageWithData:data];
+               
+               _userphoto.contentMode = UIViewContentModeScaleAspectFit;
+               
+               // UIImageVIewを更新する
+               dispatch_async(dispatch_get_main_queue(), ^{
+                   _userphoto.image = image;
+               });
+           }];
+    
+    
+    [task resume];
+    [usertask resume];
 }
 
 @end

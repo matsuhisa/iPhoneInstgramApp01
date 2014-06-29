@@ -1,18 +1,12 @@
-//
 //  MasterViewController.m
 //  InstagramApp01
-//
-//  Created by 松久浩伸 on 2014/06/29.
-//  Copyright (c) 2014年 ___FULLUSERNAME___. All rights reserved.
-//
+
 
 #import "MasterViewController.h"
-
 #import "DetailViewController.h"
 
-@interface MasterViewController () {
-    NSMutableArray *_objects;
-}
+@interface MasterViewController ()
+@property (strong, nonatomic) NSArray *photos;
 @end
 
 @implementation MasterViewController
@@ -25,30 +19,81 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-	// Do any additional setup after loading the view, typically from a nib.
-    self.navigationItem.leftBarButtonItem = self.editButtonItem;
-
-    UIBarButtonItem *addButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAdd target:self action:@selector(insertNewObject:)];
-    self.navigationItem.rightBarButtonItem = addButton;
+    [self fetchNewPhotos];
 }
 
 - (void)didReceiveMemoryWarning
 {
     [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
 }
 
-- (void)insertNewObject:(id)sender
+- (void)fetchNewPhotos
 {
-    if (!_objects) {
-        _objects = [[NSMutableArray alloc] init];
-    }
-    [_objects insertObject:[NSDate date] atIndex:0];
-    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:0 inSection:0];
-    [self.tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+    NSURLSession *session = [NSURLSession sharedSession];
+    
+    NSURL *url = [NSURL URLWithString:@"https://api.instagram.com/v1/tags/prytty/media/recent?access_token=228314.f59def8.b2923efc7b794cd080eb1ade6a329dd2"];
+    
+    NSURLSessionDataTask *task =
+    [session dataTaskWithURL:url
+           completionHandler:^(NSData *data, NSURLResponse *response, NSError *error)
+     {
+         if (error)
+         {
+             // 通信が異常終了したときの処理
+             return;
+         }
+         
+         // 通信が正に常終了したときの処理
+         NSError *jsonError = nil;
+         NSDictionary *jsonDictionary = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+         
+         // JSONエラーチェック
+         if (jsonError != nil) return;
+         
+         // 検索結果をディクショナリにセット
+         self.photos = jsonDictionary[@"data"];
+         
+         // TableView をリロード
+         // メインスレッドでやらないと最悪クラッシュする
+         [self performSelectorOnMainThread:@selector(reloadTableView) withObject:nil waitUntilDone:YES];
+     }];
+    
+    // 通信開始
+    [task resume];
 }
 
-#pragma mark - Table View
+// テーブルビューを再描画する
+- (void)reloadTableView
+{
+    [self.tableView reloadData];
+}
+
+
+// セルの描画
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"Cell" forIndexPath:indexPath];
+
+    NSDictionary *photos = self.photos[indexPath.row];
+    
+    cell.textLabel.text       = photos[@"caption"][@"text"];
+    cell.detailTextLabel.text = photos[@"caption"][@"from"][@"username"];
+    
+    return cell;
+}
+
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
+{
+    if ([[segue identifier] isEqualToString:@"showDetail"]) {
+        UITableViewCell *cell = (UITableViewCell *)sender;
+        
+        NSIndexPath *indexPath = [self.tableView indexPathForCell:cell];
+        NSDictionary *photo = self.photos[indexPath.row];
+
+        DetailViewController *viewController = [segue destinationViewController];
+        viewController.photo = photo;
+    }
+}
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
@@ -57,57 +102,7 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return _objects.count;
-}
-
-- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"Cell" forIndexPath:indexPath];
-
-    NSDate *object = _objects[indexPath.row];
-    cell.textLabel.text = [object description];
-    return cell;
-}
-
-- (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    // Return NO if you do not want the specified item to be editable.
-    return YES;
-}
-
-- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    if (editingStyle == UITableViewCellEditingStyleDelete) {
-        [_objects removeObjectAtIndex:indexPath.row];
-        [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
-    } else if (editingStyle == UITableViewCellEditingStyleInsert) {
-        // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view.
-    }
-}
-
-/*
-// Override to support rearranging the table view.
-- (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath
-{
-}
-*/
-
-/*
-// Override to support conditional rearranging of the table view.
-- (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    // Return NO if you do not want the item to be re-orderable.
-    return YES;
-}
-*/
-
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
-{
-    if ([[segue identifier] isEqualToString:@"showDetail"]) {
-        NSIndexPath *indexPath = [self.tableView indexPathForSelectedRow];
-        NSDate *object = _objects[indexPath.row];
-        [[segue destinationViewController] setDetailItem:object];
-    }
+    return self.photos.count;
 }
 
 @end
