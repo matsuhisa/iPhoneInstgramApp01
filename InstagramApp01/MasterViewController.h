@@ -5,4 +5,7 @@
 
 @interface MasterViewController : UITableViewController
 
+@property (weak, nonatomic) IBOutlet UILabel *textlabel;
+@property (weak, nonatomic) IBOutlet UIImageView *CellImage;
+
 @end
